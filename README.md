@@ -1,6 +1,8 @@
 # CSSQL
 **Cascading Style Sheets Query Language**
+
 An SQL-like CSS syntax for CSS.
+
 Insoired by this [tweet](https://twitter.com/Jordy_vD_/status/1682041493446606849)
 
 ## Installation
