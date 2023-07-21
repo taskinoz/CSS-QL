@@ -1,0 +1,19 @@
+{
+  "name": "css-ql",
+  "version": "1.0.0",
+  "description": "An SQL-like CSS syntax for CSS.",
+  "main": "./cql",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "node test"
+  },
+  "keywords": [
+    "css",
+    "sql",
+    "transpiler"
+  ],
+  "author": "Tristan Kennedy",
+  "license": "MIT"
+}
