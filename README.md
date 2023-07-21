@@ -1,6 +1,6 @@
-# CSS QL
+# CSSQL
 **Cascading Style Sheets Query Language**
-An SQL-like CSS syntax into standard CSS.
+An SQL-like CSS syntax for CSS.
 
 ## Installation
 Since this is not a published package, you need to manually add the `.js` file to your project. Once you've added the `cql.js` file, you can use `require` to import it into your project.
