@@ -1,19 +1,46 @@
 {
   "name": "css-ql",
-  "version": "1.0.0",
-  "description": "An SQL-like CSS syntax for CSS.",
-  "main": "./cql",
-  "directories": {
-    "test": "tests"
+  "version": "2.0.0",
+  "description": "A typed SQL-like language that compiles to modern CSS.",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
   },
+  "sideEffects": false,
+  "bin": {
+    "cql": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
-    "test": "node test"
+    "build": "tsc -p tsconfig.json",
+    "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
+    "prepack": "npm run clean && npm run build",
+    "test": "npm run clean && npm run build && node --test tests/*.test.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "keywords": [
     "css",
     "sql",
-    "transpiler"
+    "typescript",
+    "transpiler",
+    "compiler"
   ],
   "author": "Tristan Kennedy",
-  "license": "MIT"
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.8.0"
+  }
 }
