@@ -7,7 +7,7 @@ import type {
   SourceLocation,
   Statement,
   Stylesheet,
-} from "./types";
+} from "./types.js";
 
 type TokenKind = "word" | "string" | "literal" | "symbol" | "comment" | "eof";
 

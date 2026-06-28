@@ -1,8 +1,8 @@
 import { promises as fs, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { compile, generate } from "./compiler";
-import { CqlSyntaxError, parse } from "./parser";
-import type { TranspileOptions } from "./types";
+import { compile, generate } from "./compiler.js";
+import { CqlSyntaxError, parse } from "./parser.js";
+import type { TranspileOptions } from "./types.js";
 
 function outputPath(input: string, output?: string): string {
   if (output) return path.resolve(output);
@@ -29,4 +29,4 @@ export async function transpileFile(input: string, options: TranspileOptions = {
 }
 
 export { compile, CqlSyntaxError, generate, parse };
-export type * from "./types";
+export type * from "./types.js";

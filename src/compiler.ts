@@ -1,5 +1,5 @@
-import { parse } from "./parser";
-import type { AtRule, CompileOptions, Declaration, Rule, Selector, Statement, Stylesheet } from "./types";
+import { parse } from "./parser.js";
+import type { AtRule, CompileOptions, Declaration, Rule, Selector, Statement, Stylesheet } from "./types.js";
 
 function selectorText(selector: Selector): string {
   switch (selector.kind) {

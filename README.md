@@ -16,6 +16,16 @@ SET color = "red" WHERE CLASSNAME LIKE %danger%
 
 The original syntax still works. Version 2 adds a parser, typed AST, useful diagnostics, arbitrary selectors, multiple declarations and selectors, nested CSS, every kind of CSS at-rule through a generic construct, comments, minification, file APIs, and a CLI.
 
+## Playground
+
+The repository includes a browser playground in [`demo/`](demo/). It runs the same parser and compiler as the npm library entirely in the browser, with live output, an isolated rendered preview, syntax highlighting, examples, error locations, copy/download controls, and light/dark themes.
+
+```sh
+npm run demo
+```
+
+Then open `http://127.0.0.1:4173`. Run `npm run build:demo` when preparing the static folder for GitHub Pages or another static host.
+
 ## Install and build
 
 ```sh
