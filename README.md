@@ -2,7 +2,7 @@
 
 **Cascading Style Sheets Query Language** is the SQL-flavoured CSS compiler nobody asked for, now implemented as a real TypeScript library.
 
-It began with [Jordy van der Wielen's meme tweet](https://twitter.com/Jordy_vD_/status/1682041493446606849) and the wonderfully cursed premise that styling a class should look like a database update:
+It began with [@Jordy_vD_'s tweet](https://twitter.com/Jordy_vD_/status/1682041493446606849) and the wonderfully cursed premise that styling a class should look like a database update:
 
 ```sql
 SET color = "red" WHERE CLASSNAME LIKE %danger%
