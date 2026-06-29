@@ -1,4 +1,9 @@
 import { compile, CqlSyntaxError } from "./lib/browser.js";
+import { basicSetup } from "codemirror";
+import { indentWithTab } from "@codemirror/commands";
+import { HighlightStyle, StreamLanguage, syntaxHighlighting } from "@codemirror/language";
+import { EditorView, keymap } from "@codemirror/view";
+import { tags } from "@lezer/highlight";
 
 const examples = {
   starter: `-- The database called. It wants its stylesheet back.
@@ -100,8 +105,7 @@ const previewBaseCss = `
   @media (max-width: 520px) { .profile-row { display: block; } .avatar { margin-bottom: 18px; } .demo-list { display: grid; } }
 `;
 
-const sourceEditor = document.querySelector("#source-editor");
-const sourceHighlight = document.querySelector("#source-highlight");
+const sourceEditorMount = document.querySelector("#source-editor");
 const outputCode = document.querySelector("#output-code");
 const compileStatus = document.querySelector("#compile-status");
 const lineCount = document.querySelector("#line-count");
@@ -111,32 +115,95 @@ const exampleSelect = document.querySelector("#example-select");
 const toastRegion = document.querySelector("#toast-region");
 let currentCss = "";
 let liveTimer;
+let editorView;
+
+const cqlLanguage = StreamLanguage.define({
+  startState: () => ({ blockComment: false, selectorValue: false }),
+  copyState: (state) => ({ ...state }),
+  token(stream, state) {
+    if (state.blockComment) {
+      if (stream.skipTo("*/")) {
+        stream.match("*/");
+        state.blockComment = false;
+      } else {
+        stream.skipToEnd();
+      }
+      return "comment";
+    }
+    if (stream.eatSpace()) return null;
+    if (stream.match(/--(?=\s|$).*/)) return "comment";
+    if (stream.match("/*")) {
+      state.blockComment = true;
+      return "comment";
+    }
+    if (stream.peek() === '"' || stream.peek() === "'") {
+      const quote = stream.next();
+      let escaped = false;
+      while (!stream.eol()) {
+        const character = stream.next();
+        if (character === quote && !escaped) break;
+        escaped = character === "\\" && !escaped;
+        if (character !== "\\") escaped = false;
+      }
+      state.selectorValue = false;
+      return "string";
+    }
+    if (stream.peek() === "%") {
+      stream.next();
+      let escaped = false;
+      while (!stream.eol()) {
+        const character = stream.next();
+        if (character === "%" && !escaped) break;
+        escaped = character === "\\" && !escaped;
+        if (character !== "\\") escaped = false;
+      }
+      const style = state.selectorValue ? "variableName" : "string";
+      state.selectorValue = false;
+      return style;
+    }
+    if (stream.match(/[=,;{}]/)) return "punctuation";
+    if (stream.match(/--[\w-]+(?=\s*=)/) || stream.match(/[A-Za-z_][\w-]*(?=\s*=)/)) return "propertyName";
+    if (stream.match(/[A-Za-z_][\w-]*/)) {
+      const word = stream.current().toUpperCase();
+      if (["SET", "WHERE", "LIKE", "OR", "AT"].includes(word)) {
+        state.selectorValue = word === "LIKE";
+        return "keyword";
+      }
+      if (["CLASSNAME", "ID", "TAGNAME", "SELECTOR", "ROOT"].includes(word)) return "typeName";
+      return null;
+    }
+    stream.next();
+    return null;
+  },
+});
+
+const cqlHighlight = HighlightStyle.define([
+  { tag: tags.keyword, color: "var(--acid)", fontWeight: "600" },
+  { tag: tags.typeName, color: "var(--purple)" },
+  { tag: tags.variableName, color: "var(--purple)" },
+  { tag: tags.string, color: "#f4b879" },
+  { tag: tags.comment, color: "#697061", fontStyle: "italic" },
+  { tag: tags.propertyName, color: "#79dac9" },
+  { tag: tags.punctuation, color: "#7b8075" },
+]);
+
+const editorTheme = EditorView.theme({
+  "&": { height: "385px", backgroundColor: "transparent", color: "#c5c8be" },
+  "&.cm-focused": { outline: "none" },
+  ".cm-scroller": { overflow: "auto", fontFamily: '"DM Mono", ui-monospace, monospace', fontSize: "12.5px", lineHeight: "1.72" },
+  ".cm-content": { padding: "16px 0", caretColor: "var(--acid)", minHeight: "100%" },
+  ".cm-line": { padding: "0 18px 0 8px" },
+  ".cm-cursor, .cm-dropCursor": { borderLeftColor: "var(--acid)", borderLeftWidth: "2px" },
+  ".cm-selectionBackground, &.cm-focused .cm-selectionBackground, ::selection": { backgroundColor: "rgb(217 255 87 / 0.18) !important" },
+  ".cm-gutters": { backgroundColor: "#151712", color: "#555b50", borderRight: "1px solid #292d25", paddingTop: "12px" },
+  ".cm-activeLineGutter": { backgroundColor: "#20241b", color: "#a5ab9e" },
+  ".cm-activeLine": { backgroundColor: "rgb(255 255 255 / 0.025)" },
+  ".cm-matchingBracket": { backgroundColor: "rgb(183 164 255 / 0.2)", color: "#fff" },
+  ".cm-foldGutter": { width: "13px" },
+});
 
 function escapeHtml(value) {
   return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
-}
-
-function highlightCql(source) {
-  const tokenPattern = /--(?=\s).*?$|\/\*[\s\S]*?\*\/|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|%(?:\\.|[^%])*%|--[\w-]+|[A-Za-z_][\w-]*|[=,;{}]/gim;
-  let result = "";
-  let offset = 0;
-  for (const match of source.matchAll(tokenPattern)) {
-    const token = match[0];
-    const index = match.index;
-    result += escapeHtml(source.slice(offset, index));
-    let className = "";
-    if (token.startsWith("-- ") || token.startsWith("/*")) className = "tok-comment";
-    else if (/^(SET|WHERE|LIKE|OR|AT)$/i.test(token)) className = "tok-keyword";
-    else if (/^(CLASSNAME|ID|TAGNAME|SELECTOR|ROOT)$/i.test(token)) className = "tok-selector";
-    else if (/^["'%]/.test(token)) {
-      const before = source.slice(0, index).trimEnd();
-      className = /LIKE$/i.test(before) ? "tok-selector" : "tok-string";
-    } else if (/^[=,;{}]$/.test(token)) className = "tok-punct";
-    else if (/^\s*=/.test(source.slice(index + token.length))) className = "tok-property";
-    result += className ? `<span class="${className}">${escapeHtml(token)}</span>` : escapeHtml(token);
-    offset = index + token.length;
-  }
-  return result + escapeHtml(source.slice(offset)) + "\n";
 }
 
 function highlightCss(css) {
@@ -156,20 +223,27 @@ function renderPreview(css) {
 }
 
 function updateEditorChrome() {
-  sourceHighlight.innerHTML = highlightCql(sourceEditor.value);
-  const lines = sourceEditor.value.split("\n").length;
+  const lines = editorView.state.doc.lines;
   lineCount.textContent = `${lines} ${lines === 1 ? "line" : "lines"}`;
+}
+
+function sourceText() {
+  return editorView.state.doc.toString();
+}
+
+function setSource(value) {
+  editorView.dispatch({ changes: { from: 0, to: editorView.state.doc.length, insert: value } });
 }
 
 function compileSource({ announce = false } = {}) {
   updateEditorChrome();
   try {
-    currentCss = compile(sourceEditor.value);
+    currentCss = compile(sourceText());
     outputCode.innerHTML = highlightCss(currentCss);
     outputSize.textContent = `${new Blob([currentCss]).size.toLocaleString()} B generated`;
     compileStatus.className = "compile-status";
     compileStatus.innerHTML = "<span></span> Compiled successfully";
-    sourceEditor.setAttribute("aria-invalid", "false");
+    editorView.contentDOM.setAttribute("aria-invalid", "false");
     renderPreview(currentCss);
     if (announce) showToast("Query compiled", "The CSS and preview are up to date.");
     return true;
@@ -177,7 +251,7 @@ function compileSource({ announce = false } = {}) {
     const location = error instanceof CqlSyntaxError ? ` · line ${error.line}, column ${error.column}` : "";
     compileStatus.className = "compile-status is-error";
     compileStatus.innerHTML = `<span></span> ${escapeHtml(error.message.replace(/\s*\(\d+:\d+\)$/, ""))}${location}`;
-    sourceEditor.setAttribute("aria-invalid", "true");
+    editorView.contentDOM.setAttribute("aria-invalid", "true");
     if (announce) showToast("Could not compile", error.message, true);
     return false;
   }
@@ -191,48 +265,14 @@ function showToast(title, message, isError = false) {
   window.setTimeout(() => toast.remove(), 2800);
 }
 
-function replaceSelectionWithIndent(outdent = false) {
-  const start = sourceEditor.selectionStart;
-  const end = sourceEditor.selectionEnd;
-  const value = sourceEditor.value;
-  if (start === end && !outdent) {
-    sourceEditor.setRangeText("  ", start, end, "end");
-    return;
-  }
-  const lineStart = value.lastIndexOf("\n", start - 1) + 1;
-  const block = value.slice(lineStart, end);
-  const changed = outdent ? block.replace(/^ {1,2}/gm, "") : block.replace(/^/gm, "  ");
-  sourceEditor.setRangeText(changed, lineStart, end, "select");
-}
-
-sourceEditor.addEventListener("input", () => {
-  updateEditorChrome();
-  window.clearTimeout(liveTimer);
-  liveTimer = window.setTimeout(() => compileSource(), 120);
-});
-sourceEditor.addEventListener("scroll", () => {
-  sourceHighlight.scrollTop = sourceEditor.scrollTop;
-  sourceHighlight.scrollLeft = sourceEditor.scrollLeft;
-});
-sourceEditor.addEventListener("keydown", (event) => {
-  if (event.key === "Tab") {
-    event.preventDefault();
-    replaceSelectionWithIndent(event.shiftKey);
-    sourceEditor.dispatchEvent(new Event("input"));
-  } else if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
-    event.preventDefault();
-    compileSource({ announce: true });
-  }
-});
-
 document.querySelector("#compile-button").addEventListener("click", () => compileSource({ announce: true }));
 document.querySelector("#reset-button").addEventListener("click", () => {
-  sourceEditor.value = examples[exampleSelect.value];
+  setSource(examples[exampleSelect.value]);
   compileSource();
   showToast("Example reset", "The original query has been restored.");
 });
 exampleSelect.addEventListener("change", () => {
-  sourceEditor.value = examples[exampleSelect.value];
+  setSource(examples[exampleSelect.value]);
   compileSource();
   showToast("Example loaded", exampleSelect.options[exampleSelect.selectedIndex].text);
 });
@@ -264,5 +304,30 @@ themeToggle.addEventListener("click", () => setTheme(document.documentElement.da
 const savedTheme = localStorage.getItem("css-ql:theme");
 setTheme(savedTheme || (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"));
 
-sourceEditor.value = examples.starter;
+editorView = new EditorView({
+  doc: examples.starter,
+  parent: sourceEditorMount,
+  extensions: [
+    basicSetup,
+    cqlLanguage,
+    syntaxHighlighting(cqlHighlight),
+    editorTheme,
+    EditorView.contentAttributes.of({
+      "aria-label": "CQL source editor",
+      autocapitalize: "off",
+      autocomplete: "off",
+      spellcheck: "false",
+    }),
+    keymap.of([
+      indentWithTab,
+      { key: "Mod-Enter", run: () => (compileSource({ announce: true }), true) },
+    ]),
+    EditorView.updateListener.of((update) => {
+      if (!update.docChanged) return;
+      updateEditorChrome();
+      window.clearTimeout(liveTimer);
+      liveTimer = window.setTimeout(() => compileSource(), 120);
+    }),
+  ],
+});
 compileSource();

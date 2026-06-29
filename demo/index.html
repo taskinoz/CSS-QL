@@ -3,9 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Write SQL-flavoured CQL and compile it to modern CSS in your browser." />
+    <meta name="description" content="CSS for backend developers. Write SQL-flavoured CQL and compile it to modern CSS." />
     <meta name="theme-color" content="#10110f" />
-    <title>CSS-QL Playground — Styling, but relational</title>
+    <title>CSS-QL Playground — CSS for backend developers</title>
     <link rel="icon" href="./mark.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
@@ -30,8 +30,8 @@
     <main id="top">
       <section class="hero" aria-labelledby="hero-title">
         <div class="hero-kicker"><span class="live-dot"></span> v2.0 · runs locally in your browser</div>
-        <h1 id="hero-title">Styling, but make it <em>relational.</em></h1>
-        <p>Write gloriously unnecessary SQL. Get perfectly ordinary CSS. No uploads, no server, no sensible explanation required.</p>
+        <h1 id="hero-title">CSS for <em>backend developers.</em></h1>
+        <p>Finally, a frontend language with a <code>WHERE</code> clause. Query the DOM like a database and compile gloriously unnecessary SQL into perfectly ordinary CSS.</p>
         <a class="hero-cta" href="#playground">Try the query <span aria-hidden="true">↓</span></a>
       </section>
 
@@ -58,10 +58,7 @@
               <div class="panel-title"><span class="file-dot cql-dot"></span><strong>query.cql</strong><span class="language-pill">CQL</span></div>
               <span class="line-count" id="line-count">1 line</span>
             </div>
-            <div class="editor-wrap">
-              <pre class="highlight-layer" aria-hidden="true"><code id="source-highlight"></code></pre>
-              <textarea id="source-editor" data-testid="source-editor" aria-label="CQL source editor" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
-            </div>
+            <div class="editor-wrap"><div id="source-editor" data-testid="source-editor"></div></div>
             <div class="panel-footer">
               <div class="compile-status" id="compile-status" role="status" aria-live="polite"><span></span> Ready</div>
               <span class="shortcut">Tab to indent · Ctrl/⌘ + Enter to compile</span>
@@ -126,6 +123,6 @@
     </footer>
 
     <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
-    <script type="module" src="./app.js"></script>
+    <script type="module" src="./bundle.js"></script>
   </body>
 </html>

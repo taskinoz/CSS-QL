@@ -137,6 +137,7 @@ main { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
 }
 .hero h1 em { color: var(--acid); font-style: normal; }
 .hero p { max-width: 650px; margin: 0 0 32px; color: var(--muted); font-size: clamp(1rem, 2vw, 1.18rem); line-height: 1.75; }
+.hero p code { padding: 2px 6px; border: 1px solid var(--line); border-radius: 5px; background: var(--panel); color: var(--acid); font: 500 0.82em "DM Mono", monospace; }
 .hero-cta { display: inline-flex; align-items: center; gap: 18px; color: var(--text); font-size: 13px; font-weight: 700; text-decoration: none; }
 .hero-cta span { display: grid; place-items: center; width: 29px; height: 29px; border: 1px solid var(--line); border-radius: 50%; color: var(--acid); transition: transform 160ms ease; }
 .hero-cta:hover span { transform: translateY(3px); }
@@ -176,7 +177,7 @@ main { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
 .css-dot { background: var(--purple); }
 .language-pill { padding: 3px 5px; border: 1px solid #3a3e34; border-radius: 4px; color: #73796c; font-size: 8px; }
 .editor-wrap, .output-wrap { position: relative; height: 385px; overflow: hidden; }
-.highlight-layer, #source-editor, .output-wrap pre {
+.output-wrap pre {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -189,17 +190,10 @@ main { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
   tab-size: 2;
   white-space: pre;
 }
-.highlight-layer { pointer-events: none; color: #c5c8be; }
-#source-editor {
-  z-index: 1;
-  resize: none;
-  background: transparent;
-  color: transparent;
-  -webkit-text-fill-color: transparent;
-  caret-color: var(--acid);
-  outline: none;
-}
-#source-editor::selection { background: rgb(217 255 87 / 0.2); -webkit-text-fill-color: transparent; }
+#source-editor, #source-editor .cm-editor { height: 100%; }
+#source-editor .cm-editor { text-align: left; }
+#source-editor .cm-tooltip { border: 1px solid #383c32; background: #24271f; color: #eceee5; }
+#source-editor .cm-panels { background: #1b1e18; color: #eceee5; }
 .output-wrap pre { position: static; color: #c5c8be; }
 .tok-keyword { color: var(--acid); font-weight: 500; }
 .tok-selector { color: var(--purple); }

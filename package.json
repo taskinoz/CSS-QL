@@ -23,7 +23,7 @@
   "scripts": {
     "build": "npm run build:lib && npm run build:demo",
     "build:lib": "tsc -p tsconfig.json",
-    "build:demo": "tsc -p tsconfig.browser.json",
+    "build:demo": "tsc -p tsconfig.browser.json && node scripts/build-demo.cjs",
     "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
     "demo": "npm run build:demo && node demo/server.cjs",
     "prepack": "npm run clean && npm run build:lib",
@@ -43,7 +43,12 @@
     "node": ">=18"
   },
   "devDependencies": {
+    "@codemirror/commands": "^6.8.1",
+    "@codemirror/language": "^6.11.3",
     "@types/node": "^24.0.0",
+    "@lezer/highlight": "^1.2.1",
+    "codemirror": "^6.0.2",
+    "esbuild": "^0.25.5",
     "typescript": "^5.8.0"
   }
 }
