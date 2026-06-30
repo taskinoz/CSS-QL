@@ -2,11 +2,13 @@
 
 **Cascading Style Sheets Query Language** is the SQL-flavoured CSS compiler nobody asked for, now implemented as a real TypeScript library.
 
-It began with [@Jordy_vD_'s tweet](https://twitter.com/Jordy_vD_/status/1682041493446606849) and the wonderfully cursed premise that styling a class should look like a database update:
+It was inspired by [this tweet from @Jordy_vD_](https://twitter.com/Jordy_vD_/status/1682041493446606849):
 
 ```sql
 SET color = "red" WHERE CLASSNAME LIKE %danger%
 ```
+
+Which compiles to:
 
 ```css
 .danger {
@@ -14,19 +16,27 @@ SET color = "red" WHERE CLASSNAME LIKE %danger%
 }
 ```
 
-The original syntax still works. Version 2 adds a parser, typed AST, useful diagnostics, arbitrary selectors, multiple declarations and selectors, nested CSS, every kind of CSS at-rule through a generic construct, comments, minification, file APIs, and a CLI.
+The project started as a small JavaScript experiment. Version 2 is a full TypeScript rewrite with a proper parser, typed AST, useful errors, nested CSS, at-rules, comments, minification, a CLI and file APIs.
 
-## Playground
+## Demo
 
-The repository includes a browser playground in [`demo/`](demo/). It runs the same parser and compiler as the npm library entirely in the browser, with live output, an isolated rendered preview, syntax highlighting, examples, error locations, copy/download controls, and light/dark themes.
+There is a browser playground in [`demo/`](demo/) which runs the same compiler as the library.
 
 ```sh
 npm run demo
 ```
 
-Then open `http://127.0.0.1:4173`. Run `npm run build:demo` when preparing the static folder for GitHub Pages or another static host.
+Open `http://127.0.0.1:4173` to view the demo.
 
-## Install and build
+The demo includes live output, a rendered preview, syntax highlighting, examples, error locations, copy and download buttons, and light/dark themes.
+
+To build the static demo for GitHub Pages or another static host:
+
+```sh
+npm run build:demo
+```
+
+## Getting started
 
 ```sh
 npm install
@@ -40,17 +50,22 @@ import { compile, parse, transpileFile } from "css-ql";
 
 const css = compile('SET display = "grid" WHERE CLASSNAME LIKE %gallery%;');
 const ast = parse('SET color = "hotpink" WHERE ID LIKE %logo%;');
-await transpileFile("styles.cql", { output: "public/styles.css", minify: true });
+
+await transpileFile("styles.cql", {
+  output: "public/styles.css",
+  minify: true
+});
 ```
 
-The old synchronous API remains available:
+The original synchronous API is still available:
 
 ```js
 const { transpile } = require("css-ql");
-const outputPath = transpile("styles.cql"); // writes styles.css
+
+transpile("styles.cql"); // writes styles.css
 ```
 
-Or use the CLI:
+You can also use the CLI:
 
 ```sh
 cql styles.cql
@@ -58,18 +73,16 @@ cql styles.cql --output public/styles.css --minify
 cql styles.cql --stdout
 ```
 
-## Language
+## Syntax
 
-### Rules and selectors
+### Selectors
 
-`SET` accepts one or more comma-separated declarations. `WHERE` accepts selector conditions joined by `OR`.
+Use `SET` for CSS declarations and `WHERE` for the selector. Multiple declarations are separated with commas and selectors can be joined with `OR`.
 
 ```sql
 SET color = %var(--text)%, padding = "1rem", display = "grid !important"
 WHERE CLASSNAME LIKE %card% OR ID LIKE %featured%;
 ```
-
-Selector types are:
 
 | CQL | CSS |
 | --- | --- |
@@ -79,11 +92,11 @@ Selector types are:
 | `SELECTOR LIKE %.card:hover > img%` | `.card:hover > img` |
 | `ROOT LIKE %root%` | `:root` |
 
-`SELECTOR` is the escape hatch for the complete CSS selector grammar, including attributes, pseudo-classes, pseudo-elements, combinators, selector lists, and nesting with `&`.
+Use `SELECTOR` when you need normal CSS selectors such as attributes, pseudo-classes, pseudo-elements, combinators or nesting with `&`.
 
-### Values and literals
+### Values
 
-Double-quoted and single-quoted values are CQL strings; their surrounding quotes are not emitted. Percent literals preserve complex CSS text, including spaces and commas:
+Quotes around CQL strings are removed in the generated CSS. Use `%...%` when a value contains spaces, commas or other CSS syntax.
 
 ```sql
 SET font-family = %"Meme Sans", sans-serif%,
@@ -91,15 +104,16 @@ SET font-family = %"Meme Sans", sans-serif%,
 WHERE CLASSNAME LIKE %grid%;
 ```
 
-Escape a literal percent sign as `\%` inside `%...%`. Simple CSS tokens such as `red`, `0`, and `var(--brand)` may be left unquoted.
+Simple values such as `red`, `0` and `var(--brand)` do not need quotes. A literal percent sign inside `%...%` can be escaped as `\%`.
 
 ### Nested CSS
 
-Put more statements after a rule to emit native CSS nesting:
+Rules can contain more rules, which generates native CSS nesting:
 
 ```sql
 SET color = "navy" WHERE CLASSNAME LIKE %button% {
   SET color = "blue" WHERE SELECTOR LIKE %&:hover%;
+
   AT MEDIA %(prefers-reduced-motion: no-preference)% {
     SET transition = "color 150ms";
   }
@@ -108,7 +122,7 @@ SET color = "navy" WHERE CLASSNAME LIKE %button% {
 
 ### At-rules
 
-`AT <name> <prelude>` maps to any CSS at-rule. This generic form covers current and future CSS instead of maintaining a hard-coded allowlist.
+`AT <name> <value>` can be used for any CSS at-rule.
 
 ```sql
 AT IMPORT %url("theme.css") layer(theme)%;
@@ -118,7 +132,8 @@ AT MEDIA %(width >= 48rem)% {
 }
 
 AT FONT-FACE {
-  SET font-family = %"Meme Sans"%, src = %url("meme.woff2") format("woff2")%;
+  SET font-family = %"Meme Sans"%,
+      src = %url("meme.woff2") format("woff2")%;
 }
 
 AT KEYFRAMES %spin% {
@@ -127,29 +142,29 @@ AT KEYFRAMES %spin% {
 }
 ```
 
-A `SET` without `WHERE` is allowed inside an `AT` block for declaration-based rules such as `@font-face`, `@page`, and `@property`. Statement-based blocks can contain normal `SET ... WHERE ...` rules and nested `AT` rules. See [examples/complete.cql](examples/complete.cql).
+Inside declaration-based at-rules such as `@font-face`, `@page` and `@property`, a `SET` does not need a `WHERE`. See [`examples/complete.cql`](examples/complete.cql) for a larger example.
 
 ### Comments
 
-Both SQL-style line comments and CSS block comments are accepted:
+SQL-style line comments and CSS block comments both work:
 
 ```sql
--- emitted as a CSS comment
-/* also emitted as a CSS comment */
+-- this becomes a CSS comment
+/* so does this */
 ```
 
-Comments are omitted by `minify: true`, `--minify`, `comments: false`, or `--no-comments`.
+Comments are removed when using `minify: true`, `--minify`, `comments: false` or `--no-comments`.
 
 ## API
 
-- `compile(source, options?)` → CSS string
-- `parse(source)` → typed `Stylesheet` AST
-- `generate(ast, options?)` → CSS string
-- `transpile(input, options?)` → synchronously writes a CSS file and returns its path
-- `transpileFile(input, options?)` → asynchronously writes a CSS file and returns its path
-- `CqlSyntaxError` → syntax error with `line`, `column`, and `offset`
+- `compile(source, options?)` returns a CSS string
+- `parse(source)` returns a typed `Stylesheet` AST
+- `generate(ast, options?)` turns an AST into CSS
+- `transpile(input, options?)` synchronously writes a CSS file
+- `transpileFile(input, options?)` asynchronously writes a CSS file
+- `CqlSyntaxError` includes the error's `line`, `column` and `offset`
 
-`CompileOptions` supports `minify` and `comments`. `TranspileOptions` adds `output`.
+`CompileOptions` supports `minify` and `comments`. `TranspileOptions` also supports `output`.
 
 ## Development
 
@@ -159,4 +174,4 @@ npm run typecheck
 npm pack --dry-run
 ```
 
-CSS-QL is MIT licensed. It is intentionally silly; the compiler no longer has to be.
+MIT licensed. This is still a silly project, it just has a less silly compiler now.
