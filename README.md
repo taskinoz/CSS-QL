@@ -1,3 +1,5 @@
+<center><img src="assets/logo.webp" alt="CSS-QL" width="250" height="250" /></center>
+
 # CSS-QL
 
 **Cascading Style Sheets Query Language** is the SQL-flavoured CSS compiler nobody asked for, now implemented as a real TypeScript library.
